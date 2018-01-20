@@ -8,6 +8,10 @@ import requests # GET and POST
 import sys # for using any system functions
 
 import argparse, subprocess, os, binascii, time, hashlib, re, copy, textwrap
+try:
+    from urllib.request import urlopen # Python 3
+except ImportError:
+    from urllib2 import urlopen # Python 2
 
 DEFAULT_CA = "https://iisca.com"
 LOGGER = logging.getLogger(__name__)
