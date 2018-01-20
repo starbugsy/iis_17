@@ -6,6 +6,7 @@ import logging # library welche uns logging ermöglich, logger z.B. log.info
 import json # für json in python (head, payload ....) , jegliche Communication mit Server
 import requests # GET and POST
 import sys # for using any system functions
+import ssl
 
 import argparse, subprocess, os, binascii, time, hashlib, re, copy, textwrap
 try:
