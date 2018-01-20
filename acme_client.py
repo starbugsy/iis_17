@@ -6,7 +6,6 @@ import logging # library welche uns logging ermöglich, logger z.B. log.info
 import json # für json in python (head, payload ....) , jegliche Communication mit Server
 import requests # GET and POST
 import sys # for using any system functions
-import ssl
 
 import argparse, subprocess, os, binascii, time, hashlib, re, copy, textwrap
 try:
@@ -90,7 +89,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
+        "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta'],
     })
     if code == 201:
         log.info("Registered!")
