@@ -14,14 +14,14 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def cert_process(acc_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
     def b64_help(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
     log.info("Parsing account key...")
-    proc = subprocess.Popen(["openssl", "rsa", "-in", acc_key, "-noout", "-text"],
+    proc = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
     if proc.returncode != 0:
@@ -48,7 +48,7 @@ def cert_process(acc_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         protected = copy.deepcopy(header)
         protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected64 = _b64(json.dumps(protected).encode('utf8'))
-        proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", acc_key],
+        proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
         if proc.returncode != 0:
@@ -194,7 +194,7 @@ def main(argv):
 
     args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = cert_process(args.acc_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 if __name__ == "__main__": # pragma: no cover
