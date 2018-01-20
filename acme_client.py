@@ -16,7 +16,7 @@ LOGGER.setLevel(logging.INFO)
 
 def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
-    def b64_help(b):
+    def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
