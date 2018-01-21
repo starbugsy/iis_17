@@ -59,6 +59,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             raise IOError("OpenSSL Error: {0}".format(err))
         data = json.dumps({
             "header": header, "protected": protected64,
+            "resource": "key-change",
             "payload": payload64, "signature": _b64(out),
         })
         try:
@@ -89,7 +90,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     log.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
-        #"agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
+        "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
     })
     if code == 201:
         log.info("Registered!")
