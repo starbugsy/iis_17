@@ -199,7 +199,7 @@ def main(argv):
     parser.add_argument("--te", required=True, help="help me understand if it works like that!")
 
     args = parser.parse_args(argv)
-    print(args)
+    LOGGER.info(args)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
