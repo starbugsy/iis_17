@@ -1,12 +1,4 @@
 #!/usr/bin/env python
-"""@package letsacme
-################ letsacme ###################
-This script automates the process of getting a signed TLS/SSL certificate
-from Let's Encrypt using the ACME protocol. It will need to be run on your
-server and have access to your private account key.
-It gets both the certificate and the chain (CABUNDLE) and
-prints them on stdout unless specified otherwise.
-"""
 
 import argparse     # argument parser
 import subprocess   # Popen
@@ -24,41 +16,30 @@ import logging      # Logger
 import errno        # EEXIST
 import shutil       # rmtree
 
-try: # Python 3
+try:
     from urllib.request import urlopen
     from urllib.request import build_opener
     from urllib.request import HTTPRedirectHandler
     from urllib.error import HTTPError
     from urllib.error import URLError
-except ImportError:  # Python 2
+except ImportError:
     from urllib2 import urlopen
     from urllib2 import HTTPRedirectHandler
     from urllib2 import build_opener
     from urllib2 import HTTPError
     from urllib2 import URLError
 
-##################### letsacme info #####################
-VERSION = "0.1.3"
-VERSION_INFO = "letsacme version: "+VERSION
-##################### API info ##########################
-CA_VALID = "https://iisca.com"
-#CA_TEST = "https://acme-staging.api.letsencrypt.org"
+DEFAULT_CA = "https://iisca.com"
 TERMS = 'https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf'
 API_DIR_NAME = 'directory'
 NEW_REG_KEY = 'new-reg'
 NEW_CERT_KEY = 'new-cert'
 NEW_AUTHZ_KEY = 'new-authz'
-KEY_CHANGE = 'key-change'
-##################### Defaults ##########################
-DEFAULT_CA = CA_VALID
-API_INFO = set({})
-# used as a fallback in DocumentRoot method:
 WELL_KNOWN_DIR = ".well-known/acme-challenge"
-##################### Logger ############################
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
-#########################################################
 
 def error_exit(msg, log):
     """Print error message and exit with 1 exit status"""
@@ -75,29 +56,27 @@ def get_canonical_url(url, log):
         log.error(str(err))
         return url
 
-def get_boolean_options_from_json(conf_json, ncn, ncrt, tst, frc, quiet):
+def get_boolean_options_from_json(conf_json, ncn, ncrt):
     """Parse config json for boolean options and return them sequentially.
     It takes prioritised values as params. Among these values, non-None/True values are
     preserved and their values in config json are ignored."""
-    opt = {'NoChain':ncn, 'NoCert':ncrt, 'Test':tst, 'Force':frc, 'Quiet': quiet}
+    opt = {'NoChain':ncn, 'NoCert':ncrt}
     for key in opt:
         if not opt[key] and key in conf_json and conf_json[key].lower() == "true":
             opt[key] = True
             continue
-    return opt['NoChain'], opt['NoCert'], opt['Test'], opt['Force'], opt['Quiet']
+    return opt['NoChain'], opt['NoCert']
 
 def get_options_from_json(conf_json, ack, csr, acmd, crtf, chnf, ca):
     """Parse key-value options from config json and return the values sequentially.
     It takes prioritised values as params. Among these values, non-None values are
     preserved and their values in config json are ignored."""
     opt = {'AccountKey':ack, 'CSR':csr, 'AcmeDir':acmd, 'CertFile':crtf, 'ChainFile':chnf, 'CA':ca}
-    print("noch funktioniere ich")
     for key in opt:
         if not opt[key] and key in conf_json and conf_json[key]:
             opt[key] = conf_json[key]
             continue
         opt[key] = None if opt[key] == '' or opt[key] == '.' or opt[key] == '..' else opt[key]
-    print(opt)
     return opt['AccountKey'], opt['CSR'], opt['AcmeDir'], opt['CertFile'], opt['ChainFile'],\
            opt['CA']
 
@@ -120,12 +99,12 @@ def write_file(path, content, log, exc=True):
             sys.exit(1)
 
 
-def get_crt(account_key, csr, conf_json, well_known_dir, acme_dir, log, CA, force):
+def get_crt(account_key, csr, conf_json, well_known_dir, acme_dir, log, CA):
     """Register account, parse CSR, complete challenges and finally
     get the signed SSL certificate and return it."""
-    def _b64(bcont):
+    def _b64(b):
         """helper function base64 encode for jose spec"""
-        return base64.urlsafe_b64encode(bcont).decode('utf8').replace("=", "")
+        return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     def make_dirs(path):
         """Make directories including parent directories (if not exist)"""
@@ -356,8 +335,7 @@ def get_crt(account_key, csr, conf_json, well_known_dir, acme_dir, log, CA, forc
                            domain, challenge_status), log)
 
     # get the new certificate
-    #test_mode = " (test mode)" if CA == CA_TEST else ""
-    log.info("Signing certificate..."+test_mode)
+    log.info("Signing certificate...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
@@ -375,7 +353,7 @@ def get_crt(account_key, csr, conf_json, well_known_dir, acme_dir, log, CA, forc
         log.error('\tW: Failed to parse chain url!')
 
     # return signed certificate!
-    log.info("\tSigned!"+test_mode)
+    log.info("\tSigned!")
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64))), chain_url
 
@@ -387,11 +365,9 @@ def main(argv):
             This script automates the process of getting a signed TLS/SSL certificate from
             Let's Encrypt using the ACME protocol. It will need to be run on your server
             and have access to your private account key, so PLEASE READ THROUGH IT!.
-
             ===Example Usage===
             python letsacme.py --config-json /path/to/config.json
             ===================
-
             ===Example Crontab Renewal (once per month)===
             0 0 1 * * python /path/to/letsacme.py --config-json /path/to/config.json > /path/to/full-chain.crt 2>> /path/to/letsacme.log
             ==============================================
@@ -407,22 +383,13 @@ def main(argv):
                         Overwrites if file exists.")
     parser.add_argument("--chain-file", default=None, help="File to write the certificate to. \
                         Overwrites if file exists.")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="Suppress \
-                        output except for errors.")
     parser.add_argument("--ca", default=None, help="Certificate authority, default is Let's \
                         Encrypt.")
     parser.add_argument("--no-chain", action="store_true", help="Fetch chain (CABUNDLE) but\
                         do not print it on stdout.")
     parser.add_argument("--no-cert", action="store_true", help="Fetch certificate but do not\
                         print it on stdout.")
-    parser.add_argument("--force", action="store_true", help="Apply force. If a directory\
-                        is found inside the challenge directory with the same name as\
-                        challenge token (paranoid), this option will delete the directory\
-                        and it's content (Use with care).")
-    parser.add_argument("--test", action="store_true", help="Get test certificate (Invalid \
-                        certificate). This option won't have any effect if --ca is passed.")
-    parser.add_argument("--version", action="version", version=VERSION_INFO, help="Show version \
-                        info.")
+
 
     args = parser.parse_args(argv)
     if not args.config_json and not args.acme_dir:
@@ -453,11 +420,10 @@ def main(argv):
                                                          args.cert_file,
                                                          args.chain_file,
                                                          args.ca)
-        args.no_chain, args.no_cert, args.test, args.force, args.quiet = \
-                    get_boolean_options_from_json(conf_json, args.no_chain, args.no_cert,
-                                                  args.test, args.force, args.quiet)
+        args.no_chain, args.no_cert = \
+                    get_boolean_options_from_json(conf_json, args.no_chain, args.no_cert)
 
-    LOGGER.setLevel(logging.ERROR if args.quiet else LOGGER.level)
+    LOGGER.setLevel(LOGGER.level)
 
     # show error in case args are missing
     if not args.account_key:
@@ -468,18 +434,16 @@ def main(argv):
         error_exit("E: Either --acme-dir or --config-json must be given", log=LOGGER)
     # we need to set a default CA if not specified
     if not args.ca:
-        args.ca = CA_TEST if args.test else DEFAULT_CA
+        args.ca = DEFAULT_CA
 
     global API_INFO # this is where we will pull our information from
-    print(args.ca)
-    print(API_DIR_NAME)
-    print("Test")
-    API_INFO = json.loads(urlopen(args.ca+'/'+API_DIR_NAME).read().decode('utf8')
+    API_INFO = json.loads(urlopen(args.ca+'/'+API_DIR_NAME).read().decode('utf8'))
+
     # lets do the main task
     signed_crt, chain_url = get_crt(args.account_key, args.csr,
                                     conf_json, well_known_dir=WELL_KNOWN_DIR,
                                     acme_dir=args.acme_dir, log=LOGGER,
-                                    CA=args.ca, force=args.force)
+                                    CA=args.ca)
 
     if args.cert_file:
         write_file(args.cert_file, signed_crt, LOGGER, False)
@@ -494,4 +458,4 @@ def main(argv):
             sys.stdout.write(chain)
 
 if __name__ == "__main__": # pragma: no cover
-    main(sys.argv[1:])
+	main(sys.argv[1:])

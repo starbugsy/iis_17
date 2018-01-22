@@ -1,20 +1,16 @@
 {
 "iissite.com": {
-    "DocumentRoot":"/var/www/html/",
-    "_comment":"Global defintion IISSite"
+    "DocumentRoot":"/var/www/html",
+    "_comment":"Global defintion AcmeDir won't be used as DocumentRoot is defined"
     },
 "AccountKey":"account.key",
 "CSR": "domain.csr",
-"AcmeDir":"/home/iis/Desktop/P2d_tls/",
 "DocumentRoot":"/var/www/html",
-"_comment":"Global definition of DocumentRoot and AcmeDir",
-"CertFile":"domain.crt",
+"CertFile":"iissite.com.cert.pem",
 "ChainFile":"chain.crt",
-"CA":"https://iisca.com",
-"__comment":"For CA default value will be used. please don't change this option. Use the Test property if you want the staging api.",
+"CA":"",
 "NoChain":"False",
 "NoCert":"False",
-"Test":"False",
 "Force":"False",
 "Quiet":"False"
 }
