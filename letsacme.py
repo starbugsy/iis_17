@@ -43,11 +43,12 @@ VERSION_INFO = "letsacme version: "+VERSION
 ##################### API info ##########################
 CA_VALID = "https://iisca.com"
 #CA_TEST = "https://acme-staging.api.letsencrypt.org"
-TERMS = 'https://iisca.com/meta/terms-of-service'
+TERMS = 'https://letsencrypt.org/documents/LE-SA-v1.1.1-August-1-2016.pdf'
 API_DIR_NAME = 'directory'
 NEW_REG_KEY = 'new-reg'
 NEW_CERT_KEY = 'new-cert'
 NEW_AUTHZ_KEY = 'new-authz'
+KEY_CHANGE = 'key-change'
 ##################### Defaults ##########################
 DEFAULT_CA = CA_VALID
 API_INFO = set({})
@@ -90,11 +91,13 @@ def get_options_from_json(conf_json, ack, csr, acmd, crtf, chnf, ca):
     It takes prioritised values as params. Among these values, non-None values are
     preserved and their values in config json are ignored."""
     opt = {'AccountKey':ack, 'CSR':csr, 'AcmeDir':acmd, 'CertFile':crtf, 'ChainFile':chnf, 'CA':ca}
+    print("noch funktioniere ich")
     for key in opt:
         if not opt[key] and key in conf_json and conf_json[key]:
             opt[key] = conf_json[key]
             continue
         opt[key] = None if opt[key] == '' or opt[key] == '.' or opt[key] == '..' else opt[key]
+    print(opt)
     return opt['AccountKey'], opt['CSR'], opt['AcmeDir'], opt['CertFile'], opt['ChainFile'],\
            opt['CA']
 
@@ -468,8 +471,10 @@ def main(argv):
         args.ca = CA_TEST if args.test else DEFAULT_CA
 
     global API_INFO # this is where we will pull our information from
-    API_INFO = json.loads(urlopen(args.ca+'/'+API_DIR_NAME).read().decode('utf8'))
-
+    print(args.ca)
+    print(API_DIR_NAME)
+    print("Test")
+    API_INFO = json.loads(urlopen(args.ca+'/'+API_DIR_NAME).read().decode('utf8')
     # lets do the main task
     signed_crt, chain_url = get_crt(args.account_key, args.csr,
                                     conf_json, well_known_dir=WELL_KNOWN_DIR,
