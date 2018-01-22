@@ -193,7 +193,6 @@ def main(argv):
     args = parser.parse_args(argv)
     print(args)
 
-    args = parser.parse_args(argv)
     LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
