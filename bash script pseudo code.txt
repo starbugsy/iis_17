@@ -1,0 +1,18 @@
+bash script pseudo code
+
+if ./etc/ssl/certs/root.cert.pem not exists
+	copy&rename /home/iis/certs/root.cert.pem to usr/local/share/ca-certificates/root.cert.crt
+
+sudo update-ca-certificates
+
+if ./account.key not exists
+	openssl genrsa 4096 > account.key
+
+if ./domain.key not exists
+	openssl genrsa 4096 > domain.key
+
+if ./domain.csr not exists
+	openssl req -new -sha256 -key domain.key -subj "/CN=iissite.com" > domain.csr
+
+python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /var/www/html/.well-known/acme-challenge > ./signed.crt
+
