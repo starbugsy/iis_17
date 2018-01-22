@@ -41,9 +41,9 @@ except ImportError:  # Python 2
 VERSION = "0.1.3"
 VERSION_INFO = "letsacme version: "+VERSION
 ##################### API info ##########################
-CA_VALID = "https://acme-v01.api.letsencrypt.org"
-CA_TEST = "https://acme-staging.api.letsencrypt.org"
-TERMS = 'https://acme-v01.api.letsencrypt.org/terms'
+CA_VALID = "https://iisca.com"
+#CA_TEST = "https://acme-staging.api.letsencrypt.org"
+TERMS = 'https://iisca.com/meta/terms-of-service'
 API_DIR_NAME = 'directory'
 NEW_REG_KEY = 'new-reg'
 NEW_CERT_KEY = 'new-cert'
@@ -353,7 +353,7 @@ def get_crt(account_key, csr, conf_json, well_known_dir, acme_dir, log, CA, forc
                            domain, challenge_status), log)
 
     # get the new certificate
-    test_mode = " (test mode)" if CA == CA_TEST else ""
+    #test_mode = " (test mode)" if CA == CA_TEST else ""
     log.info("Signing certificate..."+test_mode)
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
