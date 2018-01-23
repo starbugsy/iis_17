@@ -35,7 +35,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate() # used for deadlock prevention
     if process.returncode != 0: # an error occured
-        raise IO_Error("OpenSSL Error: {}".format(error))
+        raise IOError("OpenSSL Error: {}".format(error))
 
     print("Das ist der output {}" .format(output))
 
@@ -72,7 +72,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
                                    stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         output, error = process.communicate("{0}.{1}" .format(protected_64, payload_64).encode('utf8'))
         if process.returncode != 0:
-            raise IO_Error("OpenSSL Error: {}" .format(error))
+            raise IOError("OpenSSL Error: {}" .format(error))
         print ("Output: {}" .format(process.returncode))
         data = json.dumps({
             "header": header,
@@ -83,7 +83,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         try:
             resp = urlopen(url, data.encode('utf8'))
             return resp.getcode(), resp.read()
-        except IO_Error as checker:
+        except IOError as checker:
             return get_attr(checker, "code", None), get_attr(checker, "read", checker.__str__)()
 
     # find domains
@@ -92,7 +92,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
     if process.returncode != 0:
-        raise IO_Error("Error loading {0}: {1}" .format(domain_csr, err))
+        raise IOError("Error loading {0}: {1}" .format(domain_csr, err))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", output.decode('utf8'))
     print ("Common Name: {}" .format(common_name))
@@ -120,7 +120,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
     elif code == 409:
         print("Already registered!")
     else:
-        raise Value_Error("Error registering : {0} {1}" .format(code, result))
+        raise ValueError("Error registering : {0} {1}" .format(code, result))
 
     #verify each domain
     for domain in domains:
@@ -132,7 +132,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
             "identifier": {"type": "dns", "value": domain},
         })
         if code != 201:
-            raise Value_Error("Error requesting challenges: {0} {1}" .format(code, result))
+            raise ValueError("Error requesting challenges: {0} {1}" .format(code, result))
 
         # make the challenge file
         challenge = [checker for checker in json.loads(result.decode('utf8'))['challenges'] if checker ['type'] == "http-01"][0]
@@ -150,9 +150,9 @@ def get_certificate(account_key, domain_csr, acme_dir):
             resp = urlopen(wellknown_url)
             resp_data = resp.read().decode('utf8').strip()
             assert resp_data == key_authorization
-        except (IO_Error, Assertion_Error):
+        except (IOError, AssertionError):
             os.remove(wellknown_path) # delete file
-            raise Value_Error("Wrote file to {0}, but couldn't download {1}" .format(
+            raise ValueError("Wrote file to {0}, but couldn't download {1}" .format(
                 wellknown_path, wellknown_url
             ))
 
@@ -162,22 +162,22 @@ def get_certificate(account_key, domain_csr, acme_dir):
             "keyAuthorization": key_authorization,
         })
         if code != 202: # boulder needs 202
-            raise Value_Error("Error in challenge: {0} {1}" .format(code, result))
+            raise ValueError("Error in challenge: {0} {1}" .format(code, result))
 
         # wait for the verifying
         while True:
             try:
                 resp = urlopen(challenge['uri'])
                 challenge_status = json.loads(resp.read().decode('utf8'))
-            except IO_Error as checker:
-                raise Value_Error("Error checking challenge: {0} {1}" .format(
+            except IOError as checker:
+                raise ValueError("Error checking challenge: {0} {1}" .format(
                     checker.code, json.loads(checker.read().decode('utf8'))))
             if challenge_status['status'] == "valid":
                 print("{} verified!" .format(domain))
                 os.remove(wellknown_path) # delete file
                 break
             else:
-                raise Value_Error("{0} challenge did not pass: {1}" .format(domain, challenge_status))
+                raise ValueError("{0} challenge did not pass: {1}" .format(domain, challenge_status))
 
     # get the new certificate
     print("Signing certificate...")
@@ -189,7 +189,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         "csr": _b64(domain_csr_der),
     })
     if code != 201:
-        raise Value_Error("Error signing certificate: {0} {1}".format(code, result))
+        raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
     # return signed certificate
     print("Certificate signed!")
