@@ -8,7 +8,6 @@ except ImportError:
 
 # based on the open source acme_tiny.py and adapted for boulder
 
-# DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://iisca.com"
 
 LOGGER = logging.getLogger(__name__)
@@ -17,7 +16,7 @@ LOGGER.setLevel(logging.INFO)
 
 
 def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
-    # helper function base64 encode for jose spec
+    # helper function base_64 encode
     def base_64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
@@ -67,7 +66,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
-    LOGGER.info("Parsing CSR...")
+    LOGGER.info("Parsing certificate signing request...")
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-noout", "-text"],
                             stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     output, error = process.communicate()
@@ -176,11 +175,11 @@ def main(argv):
     parser = argparse.ArgumentParser(
         description = "just a tiny_client"
     )
-    parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
-    parser.add_argument("--domain-csr", required=True, help="path to your certificate signing request")
-    parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--account-key", required = True, help = "path to account private key")
+    parser.add_argument("--domain-csr", required = True, help = "path to certificate signing request")
+    parser.add_argument("--acme-dir", required = True, help = "path to .well-known/acme-challenge/ directory")
+    parser.add_argument("--quiet", action = "store_const", const = logging.ERROR, help = "suppress output except for errors")
+    parser.add_argument("--ca", default = DEFAULT_CA, help = "certificate authority, default is https://iisca.com")
 
     arguments = parser.parse_args(argv)
 
