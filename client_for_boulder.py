@@ -18,8 +18,8 @@ LOGGER.setLevel(logging.INFO)
 
 def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
-    def _b64(b):
-        return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
+    def base_64(b):
+        return base64.urlsafebase_64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
     LOGGER.info("Parsing account key...")
@@ -37,20 +37,20 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     header = {
         "alg": "RS256",
         "jwk": {
-            "e": _b64(binascii.unhexlify(pub_exp.encode("utf-8"))),
+            "e": base_64(binascii.unhexlify(pub_exp.encode("utf-8"))),
             "kty": "RSA",
-            "n": _b64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex).encode("utf-8"))),
+            "n": base_64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex).encode("utf-8"))),
         },
     }
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
-    thumbprint = _b64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
+    thumbprint = base_64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
 
     # helper function make signed requests
     def _send_signed_request(url, payload):
-        payload64 = _b64(json.dumps(payload).encode('utf8'))
+        payload64 = base_64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
         protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
-        protected64 = _b64(json.dumps(protected).encode('utf8'))
+        protected64 = base_64(json.dumps(protected).encode('utf8'))
         proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
@@ -58,7 +58,7 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
             raise IOError("OpenSSL Error: {0}".format(err))
         data = json.dumps({
             "header": header, "protected": protected64,
-            "payload": payload64, "signature": _b64(out),
+            "payload": payload64, "signature": base_64(out),
         })
         try:
             resp = urlopen(url, data.encode('utf8'))
@@ -161,7 +161,7 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     csr_der, err = proc.communicate()
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
-        "csr": _b64(csr_der),
+        "csr": base_64(csr_der),
     })
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
