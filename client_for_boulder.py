@@ -174,32 +174,18 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
 
 def main(argv):
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent("""\
-            This script automates the process of getting a signed TLS certificate from
-            Let's Encrypt using the ACME protocol. It will need to be run on your server
-            and have access to your private account key, so PLEASE READ THROUGH IT! It's
-            only ~200 lines, so it won't take long.
-
-            ===Example Usage===
-            python acme_tiny.py --account-key ./account.key --csr ./domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > signed.crt
-            ===================
-
-            ===Example Crontab Renewal (once per month)===
-            0 0 1 * * python /path/to/acme_tiny.py --account-key /path/to/account.key --csr /path/to/domain.csr --acme-dir /usr/share/nginx/html/.well-known/acme-challenge/ > /path/to/signed.crt 2>> /var/log/acme_tiny.log
-            ==============================================
-            """)
+        description = "just a tiny_client"
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    #parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args(argv)
 
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=DEFAULT_CA)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
 
