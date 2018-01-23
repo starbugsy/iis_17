@@ -6,7 +6,7 @@ try:
 except ImportError:
     from urllib2 import urlopen  # Python 2
 
-# based on the open source acme_tiny.py
+# based on the open source acme_tiny.py and adapted for boulder
 
 # DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
 DEFAULT_CA = "https://iisca.com"
