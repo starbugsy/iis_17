@@ -16,13 +16,13 @@ LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
 
     # parse account key to get public key
-    log.info("Parsing account key...")
+    LOGGER.info("Parsing account key...")
 
     proc = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -67,7 +67,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
-    log.info("Parsing CSR...")
+    LOGGER.info("Parsing CSR...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = proc.communicate()
@@ -85,21 +85,21 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                 domains.add(san[4:])
 
     # get the certificate domains and expiration
-    log.info("Registering account...")
+    LOGGER.info("Registering account...")
     code, result = _send_signed_request(CA + "/acme/new-reg", {
         "resource": "new-reg",
         "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
     })
     if code == 201:
-        log.info("Registered!")
+        LOGGER.info("Registered!")
     elif code == 409:
-        log.info("Already registered!")
+        LOGGER.info("Already registered!")
     else:
         raise ValueError("Error registering: {0} {1}".format(code, result))
 
     # verify each domain
     for domain in domains:
-        log.info("Verifying {0}...".format(domain))
+        LOGGER.info("Verifying {0}...".format(domain))
 
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
@@ -147,7 +147,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
             if challenge_status['status'] == "pending":
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
-                log.info("{0} verified!".format(domain))
+                LOGGER.info("{0} verified!".format(domain))
                 os.remove(wellknown_path)
                 break
             else:
@@ -155,7 +155,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
                     domain, challenge_status))
 
     # get the new certificate
-    log.info("Signing certificate...")
+    LOGGER.info("Signing certificate...")
     proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     csr_der, err = proc.communicate()
@@ -167,7 +167,7 @@ def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
     # return signed certificate!
-    log.info("Certificate signed!")
+    LOGGER.info("Certificate signed!")
     return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
@@ -177,15 +177,15 @@ def main(argv):
         description = "just a tiny_client"
     )
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
-    parser.add_argument("--csr", required=True, help="path to your certificate signing request")
+    parser.add_argument("--domain-csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
     parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
-    args = parser.parse_args(argv)
+    arguments = parser.parse_args(argv)
 
-    LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    LOGGER.setLevel(arguments.quiet or LOGGER.level)
+    signed_crt = get_crt(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA=arguments.ca)
     sys.stdout.write(signed_crt)
 
 
