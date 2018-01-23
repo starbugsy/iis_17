@@ -13,6 +13,7 @@ import re # for regexes
 import copy
 import textwrap
 import logging
+
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
@@ -24,6 +25,7 @@ except ImportError:
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
+
 
 CA = "https://iisca.com"
 
@@ -194,7 +196,7 @@ def main(argv):
     arguments = parser.parse_args(argv)
 
     signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
-    sys.stdout.write(signed_crt)
+    sys.stdout.write(signed_certificate)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
