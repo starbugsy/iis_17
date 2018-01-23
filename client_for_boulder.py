@@ -27,9 +27,9 @@ LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-CA = "https://iisca.com"
+DEFAULT_CA = "https://iisca.com"
 
-def get_certificate(account_key, domain_csr, acme_dir):
+def get_certificate(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     # tiny helper function base64 encoding
     def base_64(var_help):
         return base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")
@@ -61,7 +61,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
     def send_signed_request(url, payload):
         payload_64 = base_64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        #protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
+        protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected_64 = base_64(json.dumps(protected).encode('utf8'))
         process = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
                                    stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
@@ -192,10 +192,11 @@ def main(argv):
     parser.add_argument("--account-key", required = True, help = "path to your private key")
     parser.add_argument("--domain-csr", required = True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required = True, help="path to the .well-known/acme-challenge/ directory")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     arguments = parser.parse_args(argv)
 
-    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
+    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA=args.ca)
     sys.stdout.write(signed_certificate)
 
 if __name__ == '__main__':
