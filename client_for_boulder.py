@@ -193,12 +193,12 @@ def main(argv):
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    #parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args(argv)
 
-    LOGGER.setLevel(args.quiet or LOGGER.level)
+    #LOGGER.setLevel(args.quiet or LOGGER.level)
     signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
     sys.stdout.write(signed_crt)
 
