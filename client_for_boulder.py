@@ -189,13 +189,13 @@ def main(argv):
     parser.add_argument("--account-key", required = True, help = "path to your private key")
     parser.add_argument("--domain-csr", required = True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required = True, help="path to the .well-known/acme-challenge/ directory")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    #parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    #parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     arguments = parser.parse_args(argv)
 
-    LOGGER.setLevel(arguments.quiet or LOGGER.level)
-    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
+    #LOGGER.setLevel(arguments.quiet or LOGGER.level)
+    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA = arguments.ca)
     sys.stdout.write(signed_certificate)
 
 if __name__ == '__main__':
