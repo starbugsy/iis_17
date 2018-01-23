@@ -27,9 +27,9 @@ LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-DEFAULT_CA = "https://iisca.com"
+CA = "https://iisca.com"
 
-def get_certificate(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
+def get_certificate(account_key, domain_csr, acme_dir):
     # tiny helper function base64 encoding
     def base_64(var_help):
         return base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")
@@ -79,7 +79,7 @@ def get_certificate(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             resp = urlopen(url, data.encode('utf8'))
             return resp.getcode(), resp.read()
         except IOError as checker:
-            return get_attr(checker, "code", None), get_attr(checker, "read", checker.__str__)()
+            return getattr(checker, "code", None), getattr(checker, "read", checker.__str__)()
 
     # find domains
     LOGGER.info("Parsing CSR...")
@@ -174,9 +174,9 @@ def get_certificate(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     domain_csr_der, error = process.communicate()
-    code, result = _send_signed_request(CA + "/acme/new-cert", {
+    code, result = send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
-        "csr": _b64(domain_csr_der),
+        "csr": base_64(domain_csr_der),
     })
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
@@ -192,13 +192,13 @@ def main(argv):
     parser.add_argument("--account-key", required = True, help = "path to your private key")
     parser.add_argument("--domain-csr", required = True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required = True, help="path to the .well-known/acme-challenge/ directory")
-    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    #parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    #parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     arguments = parser.parse_args(argv)
 
-    LOGGER.setLevel(arguments.quiet or LOGGER.level)
-    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA=arguments.ca)
+    #LOGGER.setLevel(arguments.quiet or LOGGER.level)
+    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
     sys.stdout.write(signed_certificate)
 
 if __name__ == '__main__':
