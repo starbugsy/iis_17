@@ -192,6 +192,7 @@ def main(argv):
     parser.add_argument("--account-key", required = True, help = "path to your private key")
     parser.add_argument("--domain-csr", required = True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required = True, help="path to the .well-known/acme-challenge/ directory")
+    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
     parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     arguments = parser.parse_args(argv)
