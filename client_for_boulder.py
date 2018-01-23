@@ -47,22 +47,22 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
 
     # helper function make signed requests
     def _send_signed_request(url, payload):
-        payload64 = base_64(json.dumps(payload).encode('utf8'))
+        payload_64 = base_64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
         protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
-        protected64 = base_64(json.dumps(protected).encode('utf8'))
+        protected_64 = base_64(json.dumps(protected).encode('utf8'))
         process = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, error = process.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
+        output, error = process.communicate("{0}.{1}".format(protected_64, payload_64).encode('utf8'))
         if process.returncode != 0:
             raise IOError("OpenSSL Error: {0}".format(error))
         data = json.dumps({
-            "header": header, "protected": protected64,
-            "payload": payload64, "signature": base_64(output),
+            "header": header, "protected": protected_64,
+            "payload": payload_64, "signature": base_64(output),
         })
         try:
-            resp = urlopen(url, data.encode('utf8'))
-            return resp.getcode(), resp.read()
+            checker = urlopen(url, data.encode('utf8'))
+            return checker.getcode(), checker.read()
         except IOError as e:
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
@@ -120,9 +120,9 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
         # check that the file is in place
         wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
-            resp = urlopen(wellknown_url)
-            resp_data = resp.read().decode('utf8').strip()
-            assert resp_data == keyauthorization
+            checker = urlopen(wellknown_url)
+            checker_data = checker.read().decode('utf8').strip()
+            assert checker_data == keyauthorization
         except (IOError, AssertionError):
             os.remove(wellknown_path)
             raise ValueError("Wrote file to {0}, but couldn't download {1}".format(
@@ -139,8 +139,8 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
         # wait for challenge to be verified
         while True:
             try:
-                resp = urlopen(challenge['uri'])
-                challenge_status = json.loads(resp.read().decode('utf8'))
+                checker = urlopen(challenge['uri'])
+                challenge_status = json.loads(checker.read().decode('utf8'))
             except IOError as e:
                 raise ValueError("Error checking challenge: {0} {1}".format(
                     e.code, json.loads(e.read().decode('utf8'))))
