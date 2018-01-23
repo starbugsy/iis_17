@@ -29,7 +29,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         print("\nOutput von base_64 {}\n" .format(base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")))
         return base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")
 
-    print("Parsing account key ...")
+    #print("Parsing account key ...")
 
     process = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -37,17 +37,17 @@ def get_certificate(account_key, domain_csr, acme_dir):
     if process.returncode != 0: # an error occured
         raise IOError("OpenSSL Error: {}".format(error))
 
-    print("Das ist der output {}" .format(output))
+    #print("Das ist der output {}" .format(output))
 
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         output.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
     pub_exp = "{0:x}" .format(int(pub_exp))
-    print("Das ist der Public Exponent 0x{}" .format(pub_exp))
-    print("pub_exp laenge {}" .format(len(pub_exp)))
+    #print("Das ist der Public Exponent 0x{}" .format(pub_exp))
+    #print("pub_exp laenge {}" .format(len(pub_exp)))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp # vermutlich aenderbar
-    print pub_exp
-    print ("pub_hex {}" .format(pub_hex))
+    #print pub_exp
+    #print ("pub_hex {}" .format(pub_hex))
 
     header = {
         "alg": "RS256",
@@ -58,14 +58,14 @@ def get_certificate(account_key, domain_csr, acme_dir):
         },
     }
     account_key_json = json.dumps(header['jwk'], sort_keys = True, separators = (',', ':'))
-    print ("account key json {}" .format(account_key_json))
+    #print ("account key json {}" .format(account_key_json))
     thumbprint = base_64(hashlib.sha256(account_key_json.encode('utf8')).digest())
 
     #helper function for signed requests
     def send_signed_request(url, payload):
         payload_64 = base_64(json.dumps(payload).encode('utf8'))
         protected = copy.deepcopy(header)
-        print ("Der HEADER {}" .format(protected))
+        #print ("Der HEADER {}" .format(protected))
         #protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected_64 = base_64(json.dumps(protected).encode('utf8'))
         process = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
@@ -73,7 +73,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         output, error = process.communicate("{0}.{1}" .format(protected_64, payload_64).encode('utf8'))
         if process.returncode != 0:
             raise IOError("OpenSSL Error: {}" .format(error))
-        print ("Output: {}" .format(process.returncode))
+        #print ("Output: {}" .format(process.returncode))
         data = json.dumps({
             "header": header,
             "protected": protected_64,
@@ -87,7 +87,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
             return get_attr(checker, "code", None), get_attr(checker, "read", checker.__str__)()
 
     # find domains
-    print("Parsing CSR...")
+    #print("Parsing CSR...")
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-noout", "-text"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
@@ -95,7 +95,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         raise IOError("Error loading {0}: {1}" .format(domain_csr, err))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", output.decode('utf8'))
-    print ("Common Name: {}" .format(common_name))
+    #print ("Common Name: {}" .format(common_name))
     if common_name is not None:
         domains.add(common_name.group(1))
     subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", output.decode('utf8'),
@@ -104,10 +104,10 @@ def get_certificate(account_key, domain_csr, acme_dir):
         for checker in subject_alt_names.group(1).split(", "):
             if checker.startswith("DNS:"):
                 domains.add(checker[4:])
-    print ("Domains: {}" .format(domains))
+    #print ("Domains: {}" .format(domains))
 
     # get the certificate domains and expiration
-    print("Registering account...")
+    #print("Registering account...")
 
 
 
@@ -116,15 +116,15 @@ def get_certificate(account_key, domain_csr, acme_dir):
         "agreement": json.loads(urlopen(CA + "/directory").read().decode('utf8'))['meta']['terms-of-service'],
     })
     if code == 201:
-        print("Registered!")
+        #print("Registered!")
     elif code == 409:
-        print("Already registered!")
+        #print("Already registered!")
     else:
         raise ValueError("Error registering : {0} {1}" .format(code, result))
 
     #verify each domain
     for domain in domains:
-        print("Verifying {}..." .format(domain))
+        #print("Verifying {}..." .format(domain))
 
         # get new challenge
         code, result = send_signed_request(CA + "/acme/new-authz", {
@@ -173,14 +173,14 @@ def get_certificate(account_key, domain_csr, acme_dir):
                 raise ValueError("Error checking challenge: {0} {1}" .format(
                     checker.code, json.loads(checker.read().decode('utf8'))))
             if challenge_status['status'] == "valid":
-                print("{} verified!" .format(domain))
+                #print("{} verified!" .format(domain))
                 os.remove(wellknown_path) # delete file
                 break
             else:
                 raise ValueError("{0} challenge did not pass: {1}" .format(domain, challenge_status))
 
     # get the new certificate
-    print("Signing certificate...")
+    #print("Signing certificate...")
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     domain_csr_der, error = process.communicate()
@@ -192,7 +192,7 @@ def get_certificate(account_key, domain_csr, acme_dir):
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
 
     # return signed certificate
-    print("Certificate signed!")
+    #print("Certificate signed!")
     return """-----BEGIN CERTIFICATE-----\n{}\n-----END CERTIFICATE-----\n""" .format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
@@ -205,10 +205,10 @@ def main(argv):
 
     arguments = parser.parse_args(argv)
 
-    print(arguments)
+    #print(arguments)
 
     signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
-    print(signed_certificate)
+    #print(signed_certificate)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
