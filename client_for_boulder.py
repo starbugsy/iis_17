@@ -26,20 +26,20 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
 
     process = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, err = process.communicate()
+    output, error = process.communicate()
     if process.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(err))
-    pub_hex, pub_exp = re.search(
+        raise IOError("OpenSSL Error: {0}".format(error))
+    public_hexadecimal, public_exponent = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         output.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
-    pub_exp = "{0:x}".format(int(pub_exp))
-    pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
+    public_exponent = "{0:x}".format(int(public_exponent))
+    public_exponent = "0{0}".format(public_exponent) if len(public_exponent) % 2 else public_exponent
     header = {
         "alg": "RS256",
         "jwk": {
-            "e": base_64(binascii.unhexlify(pub_exp.encode("utf-8"))),
+            "e": base_64(binascii.unhexlify(public_exponent.encode("utf-8"))),
             "kty": "RSA",
-            "n": base_64(binascii.unhexlify(re.sub(r"(\s|:)", "", pub_hex).encode("utf-8"))),
+            "n": base_64(binascii.unhexlify(re.sub(r"(\s|:)", "", public_hexadecimal).encode("utf-8"))),
         },
     }
     accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
