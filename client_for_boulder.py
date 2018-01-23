@@ -194,7 +194,7 @@ def main(argv):
 
     arguments = parser.parse_args(argv)
 
-    #LOGGER.setLevel(arguments.quiet or LOGGER.level)
+    LOGGER.setLevel(arguments.quiet or LOGGER.level)
     signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir)
     sys.stdout.write(signed_certificate)
 
