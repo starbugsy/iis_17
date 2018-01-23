@@ -24,14 +24,14 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     # parse account key to get public key
     LOGGER.info("Parsing account key...")
 
-    proc = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
+    process = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
+    output, err = process.communicate()
+    if process.returncode != 0:
         raise IOError("OpenSSL Error: {0}".format(err))
     pub_hex, pub_exp = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
-        out.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
+        output.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
     pub_exp = "{0:x}".format(int(pub_exp))
     pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
     header = {
@@ -51,14 +51,14 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
         protected = copy.deepcopy(header)
         protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected64 = base_64(json.dumps(protected).encode('utf8'))
-        proc = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
+        process = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = proc.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
-        if proc.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(err))
+        output, error = process.communicate("{0}.{1}".format(protected64, payload64).encode('utf8'))
+        if process.returncode != 0:
+            raise IOError("OpenSSL Error: {0}".format(error))
         data = json.dumps({
             "header": header, "protected": protected64,
-            "payload": payload64, "signature": base_64(out),
+            "payload": payload64, "signature": base_64(output),
         })
         try:
             resp = urlopen(url, data.encode('utf8'))
@@ -68,16 +68,16 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
 
     # find domains
     LOGGER.info("Parsing CSR...")
-    proc = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
+    process = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = proc.communicate()
-    if proc.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr, err))
+    output, error = process.communicate()
+    if process.returncode != 0:
+        raise IOError("Error loading {0}: {1}".format(csr, error))
     domains = set([])
-    common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode('utf8'))
+    common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", output.decode('utf8'))
     if common_name is not None:
         domains.add(common_name.group(1))
-    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", out.decode('utf8'),
+    subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", output.decode('utf8'),
                                   re.MULTILINE | re.DOTALL)
     if subject_alt_names is not None:
         for san in subject_alt_names.group(1).split(", "):
@@ -156,9 +156,9 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
 
     # get the new certificate
     LOGGER.info("Signing certificate...")
-    proc = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
+    process = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    csr_der, err = proc.communicate()
+    csr_der, error = process.communicate()
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
         "csr": base_64(csr_der),
