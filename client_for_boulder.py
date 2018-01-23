@@ -19,14 +19,15 @@ try:
 except ImportError:
     from urllib2 import urlopen # Python 2
 
-# our client was build on the parent acme_tiny.py
-# author: Sandro Letter
+# our client was build on the open source acme_tiny.py
+
+DEFAULT_CA = "https://iisca.com"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-def get_certificate(account_key, domain_csr, acme_dir, CA="https://iisca.com"):
+def get_certificate(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     # tiny helper function base64 encoding
     def base_64(var_help):
         return base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")
@@ -190,7 +191,7 @@ def main(argv):
     parser.add_argument("--domain-csr", required = True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required = True, help="path to the .well-known/acme-challenge/ directory")
     #parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", default="https://iisca.com", help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     arguments = parser.parse_args(argv)
 
