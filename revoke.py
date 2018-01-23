@@ -10,12 +10,19 @@ import binascii
 import copy
 import tempfile
 import re
+import urllib2
+import logging
+
 try:
     from urllib.request import urlopen # Python 3
 except ImportError:
     from urllib2 import urlopen # Python 2
 
 CA = "https://iisca.com"
+
+LOGGER = logging.getLogger(__name__)
+LOGGER.addHandler(logging.StreamHandler())
+LOGGER.setLevel(logging.INFO)
 
 def revoke_certificate(account_key, signed_certificate):
 
@@ -36,7 +43,7 @@ def revoke_certificate(account_key, signed_certificate):
         raise IOError("Error loading {0}".format(account_key))
     pub_hex, public_exponent = re.search("Modulus\:\s+00:([a-f0-9\:\s]+?)Exponent\: ([0-9]+)", out, re.MULTILINE|re.DOTALL).groups()
     pub_mod = binascii.unhexlify(re.sub("(\s|:)", "", pub_hex))
-    pub_mod64 = _base_64(pub_mod)
+    pub_mod64 = base_64(pub_mod)
     public_exponent = int(public_exponent)
     public_exponent = "{0:x}".format(public_exponent)
     public_exponent = "0{0}".format(public_exponent) if len(public_exponent) % 2 else public_exponent
@@ -44,7 +51,7 @@ def revoke_certificate(account_key, signed_certificate):
     header = {
         "alg": "RS256",
         "jwk": {
-            "e": base_64(binascii.unhexlify(public_exponent.encode("utf-8"))),
+            "e": base_64(public_exponent),
             "kty": "RSA",
             "n": pub_mod64,
         },
@@ -56,15 +63,15 @@ def revoke_certificate(account_key, signed_certificate):
     process = subprocess.Popen(["openssl", "x509", "-in", signed_certificate, "-outform", "DER"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     crt_der, err = process.communicate()
-    crt_der64 = _base_64(crt_der)
+    crt_der64 = base_64(crt_der)
     crt_raw = json.dumps({
         "resource": "revoke-cert",
         "certificate": crt_der64,
     }, sort_keys=True, indent=4)
-    crt_b64 = _base_64(crt_raw)
+    crt_b64 = base_64(crt_raw)
     crt_protected = copy.deepcopy(header)
     crt_protected.update({"nonce": urllib2.urlopen(nonce_req).headers['Replay-Nonce']})
-    crt_protected64 = _base_64(json.dumps(crt_protected, sort_keys=True, indent=4))
+    crt_protected64 = base_64(json.dumps(crt_protected, sort_keys=True, indent=4))
     crt_file = tempfile.NamedTemporaryFile(dir=".", prefix="revoke_", suffix=".json")
     crt_file.write("{0}.{1}".format(crt_protected64, crt_b64))
     crt_file.flush()
