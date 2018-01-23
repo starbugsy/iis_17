@@ -16,7 +16,7 @@ LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
+def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def base_64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -67,12 +67,12 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
             return getattr(e, "code", None), getattr(e, "read", e.__str__)()
 
     # find domains
-    LOGGER.info("Parsing CSR...")
-    process = subprocess.Popen(["openssl", "req", "-in", csr, "-noout", "-text"],
+    LOGGER.info("Parsing domain_csr...")
+    process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-noout", "-text"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
     if process.returncode != 0:
-        raise IOError("Error loading {0}: {1}".format(csr, error))
+        raise IOError("Error loading {0}: {1}".format(domain_csr, error))
     domains = set([])
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", output.decode('utf8'))
     if common_name is not None:
@@ -80,9 +80,9 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
     subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", output.decode('utf8'),
                                   re.MULTILINE | re.DOTALL)
     if subject_alt_names is not None:
-        for san in subject_alt_names.group(1).split(", "):
-            if san.startswith("DNS:"):
-                domains.add(san[4:])
+        for checker in subject_alt_names.group(1).split(", "):
+            if checker.startswith("DNS:"):
+                domains.add(checker[4:])
 
     # get the certificate domains and expiration
     LOGGER.info("Registering account...")
@@ -156,12 +156,12 @@ def get_crt(account_key, csr, acme_dir, CA=DEFAULT_CA):
 
     # get the new certificate
     LOGGER.info("Signing certificate...")
-    process = subprocess.Popen(["openssl", "req", "-in", csr, "-outform", "DER"],
+    process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-outform", "DER"],
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    csr_der, error = process.communicate()
+    domain_csr_der, error = process.communicate()
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
-        "csr": base_64(csr_der),
+        "domain_csr": base_64(domain_csr_der),
     })
     if code != 201:
         raise ValueError("Error signing certificate: {0} {1}".format(code, result))
