@@ -9,14 +9,14 @@ except ImportError:
 # based on the open source acme_tiny.py
 
 # DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
-DEFAULT_CA = "https://iisca.com"
+CA = "https://iisca.com"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
+def get_crt(account_key, csr, acme_dir, log=LOGGER):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -193,13 +193,13 @@ def main(argv):
     parser.add_argument("--account-key", required=True, help="path to your Let's Encrypt account private key")
     parser.add_argument("--csr", required=True, help="path to your certificate signing request")
     parser.add_argument("--acme-dir", required=True, help="path to the .well-known/acme-challenge/ directory")
-    #parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
-    parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
+    parser.add_argument("--quiet", action="store_const", const=logging.ERROR, help="suppress output except for errors")
+    #parser.add_argument("--ca", default=DEFAULT_CA, help="certificate authority, default is Let's Encrypt")
 
     args = parser.parse_args(argv)
 
-    LOGGER.setLevel(LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=args.ca)
+    LOGGER.setLevel(args.quiet or LOGGER.level)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER)
     sys.stdout.write(signed_crt)
 
 
