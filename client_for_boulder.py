@@ -118,7 +118,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
-        wellknown_url = "http://{}/.well-known/acme-challenge/{1}".format(domain, token)
+        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
             checker = urlopen(wellknown_url)
             checker_data = checker.read().decode('utf8').strip()
