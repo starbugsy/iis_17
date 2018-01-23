@@ -196,7 +196,8 @@ def main(argv):
 
     arguments = parser.parse_args(argv)
 
-    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA=args.ca)
+    LOGGER.setLevel(arguments.quiet or LOGGER.level)
+    signed_certificate = get_certificate(arguments.account_key, arguments.domain_csr, arguments.acme_dir, CA=arguments.ca)
     sys.stdout.write(signed_certificate)
 
 if __name__ == '__main__':
