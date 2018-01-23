@@ -26,10 +26,7 @@ LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
-
-CA = "https://iisca.com"
-
-def get_certificate(account_key, domain_csr, acme_dir):
+def get_certificate(account_key, domain_csr, acme_dir, CA="https://iisca.com"):
     # tiny helper function base64 encoding
     def base_64(var_help):
         return base64.urlsafe_b64encode(var_help).decode('utf8').replace("=", "")
