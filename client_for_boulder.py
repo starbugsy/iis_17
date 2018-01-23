@@ -80,9 +80,9 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     subject_alt_names = re.search(r"X509v3 Subject Alternative Name: \n +([^\n]+)\n", output.decode('utf8'),
                                   re.MULTILINE | re.DOTALL)
     if subject_alt_names is not None:
-        for checker in subject_alt_names.group(1).split(", "):
-            if checker.startswith("DNS:"):
-                domains.add(checker[4:])
+        for san in subject_alt_names.group(1).split(", "):
+            if san.startswith("DNS:"):
+                domains.add(san[4:])
 
     # get the certificate domains and expiration
     LOGGER.info("Registering account...")
