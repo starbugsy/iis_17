@@ -9,14 +9,14 @@ except ImportError:
 # based on the open source acme_tiny.py
 
 # DEFAULT_CA = "https://acme-staging.api.letsencrypt.org"
-CA = "https://iisca.com"
+DEFAULT_CA = "https://iisca.com"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.StreamHandler())
 LOGGER.setLevel(logging.INFO)
 
 
-def get_crt(account_key, csr, acme_dir, log=LOGGER):
+def get_crt(account_key, csr, acme_dir, log=LOGGER, CA=DEFAULT_CA):
     # helper function base64 encode for jose spec
     def _b64(b):
         return base64.urlsafe_b64encode(b).decode('utf8').replace("=", "")
@@ -199,7 +199,7 @@ def main(argv):
     args = parser.parse_args(argv)
 
     LOGGER.setLevel(args.quiet or LOGGER.level)
-    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER)
+    signed_crt = get_crt(args.account_key, args.csr, args.acme_dir, log=LOGGER, CA=DEFAULT_CA)
     sys.stdout.write(signed_crt)
 
 
