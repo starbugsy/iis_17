@@ -25,15 +25,15 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     LOGGER.info("Parsing account key...")
 
     process = subprocess.Popen(["openssl", "rsa", "-in", account_key, "-noout", "-text"],
-                            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     output, error = process.communicate()
     if process.returncode != 0:
-        raise IOError("OpenSSL Error: {0}".format(error))
+        raise IOError("OpenSSL Error: {}".format(error))
     public_hexadecimal, public_exponent = re.search(
         r"modulus:\n\s+00:([a-f0-9\:\s]+?)\npublicExponent: ([0-9]+)",
         output.decode('utf8'), re.MULTILINE | re.DOTALL).groups()
     public_exponent = "{0:x}".format(int(public_exponent))
-    public_exponent = "0{0}".format(public_exponent) if len(public_exponent) % 2 else public_exponent
+    public_exponent = "0{}".format(public_exponent) if len(public_exponent) % 2 else public_exponent
     header = {
         "alg": "RS256",
         "jwk": {
@@ -42,7 +42,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             "n": base_64(binascii.unhexlify(re.sub(r"(\s|:)", "", public_hexadecimal).encode("utf-8"))),
         },
     }
-    accountkey_json = json.dumps(header['jwk'], sort_keys=True, separators=(',', ':'))
+    accountkey_json = json.dumps(header['jwk'], sort_keys = True, separators = (',', ':'))
     thumbprint = base_64(hashlib.sha256(accountkey_json.encode('utf8')).digest())
 
     # helper function make signed requests
@@ -52,10 +52,10 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
         protected["nonce"] = urlopen(CA + "/directory").headers['Replay-Nonce']
         protected_64 = base_64(json.dumps(protected).encode('utf8'))
         process = subprocess.Popen(["openssl", "dgst", "-sha256", "-sign", account_key],
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                                stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         output, error = process.communicate("{0}.{1}".format(protected_64, payload_64).encode('utf8'))
         if process.returncode != 0:
-            raise IOError("OpenSSL Error: {0}".format(error))
+            raise IOError("OpenSSL Error: {}".format(error))
         data = json.dumps({
             "header": header, "protected": protected_64,
             "payload": payload_64, "signature": base_64(output),
@@ -69,7 +69,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     # find domains
     LOGGER.info("Parsing CSR...")
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-noout", "-text"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     output, error = process.communicate()
     if process.returncode != 0:
         raise IOError("Error loading {0}: {1}".format(domain_csr, error))
@@ -99,7 +99,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
 
     # verify each domain
     for domain in domains:
-        LOGGER.info("Verifying {0}...".format(domain))
+        LOGGER.info("Verifying {}...".format(domain))
 
         # get new challenge
         code, result = _send_signed_request(CA + "/acme/new-authz", {
@@ -118,7 +118,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
-        wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+        wellknown_url = "http://{}/.well-known/acme-challenge/{1}".format(domain, token)
         try:
             checker = urlopen(wellknown_url)
             checker_data = checker.read().decode('utf8').strip()
@@ -147,7 +147,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
             if challenge_status['status'] == "pending":
                 time.sleep(2)
             elif challenge_status['status'] == "valid":
-                LOGGER.info("{0} verified!".format(domain))
+                LOGGER.info("{} verified!".format(domain))
                 os.remove(wellknown_path)
                 break
             else:
@@ -157,7 +157,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
     # get the new certificate
     LOGGER.info("Signing certificate...")
     process = subprocess.Popen(["openssl", "req", "-in", domain_csr, "-outform", "DER"],
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                            stdout = subprocess.PIPE, stderr = subprocess.PIPE)
     domain_csr_der, error = process.communicate()
     code, result = _send_signed_request(CA + "/acme/new-cert", {
         "resource": "new-cert",
@@ -168,7 +168,7 @@ def get_crt(account_key, domain_csr, acme_dir, CA=DEFAULT_CA):
 
     # return signed certificate!
     LOGGER.info("Certificate signed!")
-    return """-----BEGIN CERTIFICATE-----\n{0}\n-----END CERTIFICATE-----\n""".format(
+    return """-----BEGIN CERTIFICATE-----\n{}\n-----END CERTIFICATE-----\n""".format(
         "\n".join(textwrap.wrap(base64.b64encode(result).decode('utf8'), 64)))
 
 
